@@ -53,43 +53,40 @@
           <div class="flex items-center space-x-3">
             <div class="w-12 h-12 rounded-2xl bg-emerald-800 border border-emerald-600 flex items-center justify-center text-2xl shadow-inner">🏀</div>
             <div>
-              <div class="flex items-center space-x-2">
+              <div class="flex items-center flex-wrap gap-x-2">
                 <h1 class="text-2xl font-bold tracking-tight">GYM TIME</h1>
                 <span class="bg-emerald-800 text-emerald-200 text-xs px-2.5 py-0.5 rounded-full font-medium border border-emerald-700">학교 체육관 예약</span>
-<span class="text-emerald-300 text-xs font-mono">v1.1 Powered by dlwnghks </span>
+                <span class="text-emerald-300 text-xs font-mono">v1.2 Powered by dlwnghks</span>
               </div>
               <p class="text-emerald-200/80 text-xs mt-0.5">스마트 체육 시설 예약 및 실시간 코트 현황 관리</p>
             </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-2 md:gap-3 text-xs">
-            <div class="bg-[#184939] border border-[#235d49] px-3 py-2 rounded-xl flex items-center space-x-2">
-              <span class="text-emerald-200">오늘 예약팀</span>
-              <span class="font-bold text-white text-sm">{{ todayReservationsCount }}팀</span>
-            </div>
-            <div class="bg-[#184939] border border-[#235d49] px-3 py-2 rounded-xl flex items-center space-x-2">
-              <span class="text-emerald-200">이용 가능 코트</span>
-              <span class="font-bold text-emerald-400 text-sm">{{ availableSlotsCount }}개 잔여</span>
-            </div>
-            <div class="bg-[#184939] border border-emerald-600/50 px-3 py-2 rounded-xl flex items-center space-x-2">
-              <span class="text-emerald-300">학번 제한</span>
-              <span class="font-bold text-yellow-300 text-xs">1일 1회 엄격</span>
-            </div>
+            <template v-if="user">
+              <div class="bg-[#184939] border border-[#235d49] px-3 py-2 rounded-xl flex items-center space-x-2">
+                <span class="text-emerald-200">오늘 예약팀</span>
+                <span class="font-bold text-white text-sm">{{ todayReservationsCount }}팀</span>
+              </div>
+              <div class="bg-[#184939] border border-[#235d49] px-3 py-2 rounded-xl flex items-center space-x-2">
+                <span class="text-emerald-200">이용 가능 코트</span>
+                <span class="font-bold text-emerald-400 text-sm">{{ availableSlotsCount }}개 잔여</span>
+              </div>
+            </template>
             <div class="bg-emerald-950/80 border border-emerald-700 px-3 py-2 rounded-xl text-emerald-100 flex items-center space-x-2">
               <i class="fa-regular fa-calendar text-emerald-400"></i>
               <span>조회 일자: <strong>{{ currentDateStr }}</strong></span>
             </div>
 
+            <!-- 로그인 상태 -->
+            <div v-if="user" class="bg-emerald-900/90 border border-emerald-600/60 px-3 py-2 rounded-xl flex items-center space-x-2">
+              <i class="fa-solid fa-circle-user text-emerald-300"></i>
+              <span class="font-semibold text-white">{{ profile.studentId }} {{ profile.name }}</span>
+              <button @click="logout" class="text-emerald-300 hover:text-white underline underline-offset-2 ml-1">로그아웃</button>
+            </div>
+
             <!-- DB 연결 상태 -->
-            <div v-if="dbStatus === 'ok'" class="bg-emerald-900/90 text-emerald-200 border border-emerald-600/60 px-3 py-2 rounded-xl text-[11px] flex items-center space-x-1.5">
-              <i class="fa-solid fa-cloud text-emerald-400"></i>
-              <span class="font-semibold text-emerald-100">실시간 연동 중</span>
-            </div>
-            <div v-else-if="dbStatus === 'loading'" class="bg-emerald-900/90 text-emerald-200 border border-emerald-600/60 px-3 py-2 rounded-xl text-[11px] flex items-center space-x-1.5">
-              <i class="fa-solid fa-spinner fa-spin text-emerald-400"></i>
-              <span class="font-semibold text-emerald-100">연결 중...</span>
-            </div>
-            <div v-else class="bg-rose-900/90 text-rose-100 border border-rose-500/60 px-3 py-2 rounded-xl text-[11px] flex items-center space-x-1.5">
+            <div v-if="user && dbStatus === 'error'" class="bg-rose-900/90 text-rose-100 border border-rose-500/60 px-3 py-2 rounded-xl text-[11px] flex items-center space-x-1.5">
               <i class="fa-solid fa-triangle-exclamation text-rose-300"></i>
               <span class="font-semibold">서버 연결 실패</span>
             </div>
@@ -99,206 +96,268 @@
 
       <main class="max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6 flex-1">
 
-        <!-- 연결 실패 안내 -->
-        <div v-if="dbStatus === 'error'" class="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-4 text-sm">
-          <p class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 예약 서버에 연결하지 못했습니다.</p>
-          <p class="text-xs mt-1">새로고침해 보세요. 계속 안 되면 관리자에게 알려주세요. ({{ dbErrorMsg }})</p>
+        <!-- 로딩 -->
+        <div v-if="authState === 'loading'" class="py-24 text-center text-gray-500 text-sm">
+          <i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-700"></i>
+          <p class="mt-3">불러오는 중...</p>
         </div>
 
-        <!-- Tabs -->
-        <div class="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-200 flex flex-wrap md:flex-nowrap gap-1">
-          <button @click="activeTab = 'reserve'"
-            :class="activeTab === 'reserve' ? 'bg-brand-header text-white font-semibold shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
-            class="flex-1 py-3 px-4 rounded-xl transition flex items-center justify-center space-x-2 text-sm">
-            <i class="fa-regular fa-calendar-plus"></i><span>예약하기</span>
-          </button>
-          <button @click="activeTab = 'live'"
-            :class="activeTab === 'live' ? 'bg-brand-header text-white font-semibold shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
-            class="flex-1 py-3 px-4 rounded-xl transition flex items-center justify-center space-x-2 text-sm">
-            <i class="fa-solid fa-bolt text-yellow-400"></i><span>현재 사용 현황 (LIVE)</span>
-          </button>
-          <button @click="activeTab = 'timetable'"
-            :class="activeTab === 'timetable' ? 'bg-brand-header text-white font-semibold shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
-            class="flex-1 py-3 px-4 rounded-xl transition flex items-center justify-center space-x-2 text-sm">
-            <i class="fa-solid fa-table-cells"></i><span>전체 예약 현황</span>
-          </button>
-        </div>
+        <!-- ===== 로그인 화면 ===== -->
+        <div v-else-if="!user" class="max-w-md mx-auto pt-6 md:pt-12 space-y-4">
 
-        <!-- TAB 1: 예약하기 -->
-        <div v-if="activeTab === 'reserve'" class="space-y-6">
-          <section class="space-y-3">
-            <h2 class="text-base font-bold text-gray-800 flex items-center space-x-2">
-              <span class="text-emerald-700">●</span><span>1. 이용 시설 선택</span>
-            </h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div v-for="facility in facilities" :key="facility.id"
-                @click="selectedFacility = facility.id"
-                :class="selectedFacility === facility.id ? 'border-2 border-emerald-600 bg-emerald-50/70 shadow-sm' : 'border border-gray-200 bg-white hover:border-emerald-300'"
-                class="p-4 rounded-2xl cursor-pointer transition flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                  <span class="text-2xl">{{ facility.icon }}</span>
-                  <p class="font-bold text-gray-800 text-sm">{{ facility.name }}</p>
-                </div>
-                <span :class="facility.typeBadgeClass" class="text-xs px-2.5 py-1 rounded-full font-medium">{{ facility.tag }}</span>
-              </div>
+          <!-- 카톡 등 앱 내 브라우저 경고 -->
+          <div v-if="inAppBrowser" class="bg-amber-50 border border-amber-300 rounded-2xl p-4 text-sm text-amber-900 space-y-3">
+            <p class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 지금 앱 안의 브라우저로 열려 있어요</p>
+            <p class="text-xs leading-relaxed">카카오톡·인스타그램 등 앱 안에서는 구글 로그인이 막혀 있어요. <strong>크롬이나 사파리</strong>로 열어주세요.</p>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <button v-if="isKakao" @click="openExternal" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>기본 브라우저로 열기
+              </button>
+              <button @click="copyLink" class="flex-1 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 font-bold py-2.5 rounded-xl text-xs transition">
+                <i class="fa-regular fa-copy mr-1"></i>{{ linkCopied ? '복사됨! 브라우저에 붙여넣기' : '주소 복사하기' }}
+              </button>
             </div>
-          </section>
+            <p class="text-[11px] text-amber-800">아이폰 카톡: 오른쪽 아래 <strong>공유 버튼 → Safari로 열기</strong>도 돼요.</p>
+          </div>
 
-          <section class="space-y-3">
-            <div class="flex items-center justify-between">
+          <div class="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 md:p-8 text-center space-y-5">
+            <div class="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-3xl mx-auto">🔐</div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900">학교 계정으로 로그인</h2>
+              <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                <strong class="text-gray-700">@{{ SCHOOL_DOMAIN }}</strong> 학교 구글 계정만 이용할 수 있어요.<br>
+                학번과 이름은 계정 정보에서 자동으로 불러와요.
+              </p>
+            </div>
+            <button @click="login" :disabled="loginBusy"
+              class="w-full bg-white border-2 border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 disabled:opacity-60 text-gray-800 font-bold py-3 rounded-xl transition flex items-center justify-center space-x-2 text-sm">
+              <i v-if="loginBusy" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-brands fa-google text-[#4285F4]"></i>
+              <span>Google 학교 계정으로 로그인</span>
+            </button>
+            <div v-if="loginError" class="bg-rose-50 text-rose-700 border border-rose-200 p-3 rounded-xl text-xs font-medium text-left leading-relaxed">
+              {{ loginError }}
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== 로그인 후 본 화면 ===== -->
+        <template v-else>
+
+          <!-- 연결 실패 안내 -->
+          <div v-if="dbStatus === 'error'" class="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-4 text-sm">
+            <p class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 예약 서버에 연결하지 못했습니다.</p>
+            <p class="text-xs mt-1">새로고침해 보세요. 계속 안 되면 관리자에게 알려주세요. ({{ dbErrorMsg }})</p>
+          </div>
+
+          <!-- 내 예약 -->
+          <div v-if="myReservation" class="bg-emerald-50 border border-emerald-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="text-sm text-emerald-950">
+              <p class="font-bold"><i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> 오늘 내 예약</p>
+              <p class="text-xs mt-1">{{ getFacilityName(myReservation.facilityId) }} · {{ getTimeSlotTime(myReservation.timeSlotId) }} · {{ 1 + myReservation.members.length }}명</p>
+            </div>
+            <button @click="openCancelModal(myReservation, 'change')" class="text-xs bg-gray-800 text-white px-4 py-2 rounded-xl font-medium hover:bg-black transition flex items-center justify-center space-x-1">
+              <i class="fa-solid fa-rotate-left text-[11px]"></i><span>코트 변경 / 취소</span>
+            </button>
+          </div>
+
+          <!-- Tabs -->
+          <div class="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-200 flex flex-wrap md:flex-nowrap gap-1">
+            <button @click="activeTab = 'reserve'"
+              :class="activeTab === 'reserve' ? 'bg-brand-header text-white font-semibold shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+              class="flex-1 py-3 px-4 rounded-xl transition flex items-center justify-center space-x-2 text-sm">
+              <i class="fa-regular fa-calendar-plus"></i><span>예약하기</span>
+            </button>
+            <button @click="activeTab = 'live'"
+              :class="activeTab === 'live' ? 'bg-brand-header text-white font-semibold shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+              class="flex-1 py-3 px-4 rounded-xl transition flex items-center justify-center space-x-2 text-sm">
+              <i class="fa-solid fa-bolt text-yellow-400"></i><span>현재 사용 현황 (LIVE)</span>
+            </button>
+            <button @click="activeTab = 'timetable'"
+              :class="activeTab === 'timetable' ? 'bg-brand-header text-white font-semibold shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+              class="flex-1 py-3 px-4 rounded-xl transition flex items-center justify-center space-x-2 text-sm">
+              <i class="fa-solid fa-table-cells"></i><span>전체 예약 현황</span>
+            </button>
+          </div>
+
+          <!-- TAB 1: 예약하기 -->
+          <div v-if="activeTab === 'reserve'" class="space-y-6">
+            <section class="space-y-3">
               <h2 class="text-base font-bold text-gray-800 flex items-center space-x-2">
-                <span class="text-emerald-700">●</span><span>2. 시간대 선택</span>
+                <span class="text-emerald-700">●</span><span>1. 이용 시설 선택</span>
               </h2>
-              <span class="text-xs text-gray-500 font-medium">선택: <strong class="text-emerald-800">{{ getFacilityName(selectedFacility) }}</strong></span>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div v-for="timeSlot in timeSlots" :key="timeSlot.id"
-                class="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm flex flex-col justify-between space-y-3 transition hover:shadow">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-semibold text-gray-500">{{ timeSlot.label }}</span>
-                  <span v-if="isReserved(selectedFacility, timeSlot.id)" class="bg-rose-100 text-rose-700 text-xs px-2.5 py-0.5 rounded-full font-medium flex items-center space-x-1">
-                    <i class="fa-solid fa-lock text-[10px]"></i><span>이미 채워짐</span>
-                  </span>
-                  <span v-else class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-medium">예약 가능</span>
-                </div>
-                <div class="text-lg font-bold text-gray-900 tracking-tight">{{ timeSlot.time }}</div>
-                <div class="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
-                  <template v-if="isReserved(selectedFacility, timeSlot.id)">
-                    <div class="text-rose-600 font-medium flex items-center space-x-1">
-                      <i class="fa-solid fa-user"></i>
-                      <span>{{ getReservation(selectedFacility, timeSlot.id).leaderName }} 팀 ({{ getReservationTotalCount(selectedFacility, timeSlot.id) }}명)</span>
-                    </div>
-                    <span class="text-gray-400 font-medium">마감</span>
-                  </template>
-                  <template v-else>
-                    <span class="text-gray-500">바로 신청 가능</span>
-                    <button @click="openModal(selectedFacility, timeSlot.id)" class="text-emerald-700 hover:text-emerald-900 font-bold flex items-center space-x-1">
-                      <span>신청</span><i class="fa-solid fa-chevron-right text-[10px]"></i>
-                    </button>
-                  </template>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div v-for="facility in facilities" :key="facility.id"
+                  @click="selectedFacility = facility.id"
+                  :class="selectedFacility === facility.id ? 'border-2 border-emerald-600 bg-emerald-50/70 shadow-sm' : 'border border-gray-200 bg-white hover:border-emerald-300'"
+                  class="p-4 rounded-2xl cursor-pointer transition flex items-center justify-between">
+                  <div class="flex items-center space-x-3">
+                    <span class="text-2xl">{{ facility.icon }}</span>
+                    <p class="font-bold text-gray-800 text-sm">{{ facility.name }}</p>
+                  </div>
+                  <span :class="facility.typeBadgeClass" class="text-xs px-2.5 py-1 rounded-full font-medium">{{ facility.tag }}</span>
                 </div>
               </div>
-            </div>
-          </section>
-        </div>
+            </section>
 
-        <!-- TAB 2: LIVE -->
-        <div v-if="activeTab === 'live'" class="space-y-4">
-          <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h2 class="text-lg font-bold text-gray-800 flex items-center space-x-2">
-                <span class="text-yellow-500"><i class="fa-solid fa-bolt"></i></span><span>현재 사용 현황 (LIVE)</span>
-              </h2>
-              <p class="text-xs text-gray-500 mt-0.5">선택한 시간대별 각 코트 이용자 및 빈 코트 실시간 확인</p>
-            </div>
-            <div class="flex items-center space-x-2 text-xs">
-              <label class="text-gray-600 font-medium whitespace-nowrap">시간대 필터:</label>
-              <select v-model="liveTimeFilter" class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs text-gray-700 bg-white font-medium">
-                <option value="ALL">전체 시간대 보기</option>
-                <option v-for="ts in timeSlots" :key="ts.id" :value="ts.id">{{ ts.time }} ({{ ts.label }})</option>
-              </select>
-            </div>
-          </div>
+            <section class="space-y-3">
+              <div class="flex items-center justify-between">
+                <h2 class="text-base font-bold text-gray-800 flex items-center space-x-2">
+                  <span class="text-emerald-700">●</span><span>2. 시간대 선택</span>
+                </h2>
+                <span class="text-xs text-gray-500 font-medium">선택: <strong class="text-emerald-800">{{ getFacilityName(selectedFacility) }}</strong></span>
+              </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <template v-for="ts in filteredTimeSlots" :key="ts.id">
-              <div v-for="fac in facilities" :key="ts.id + fac.id" class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-3 flex flex-col justify-between">
-                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-                  <div>
-                    <span class="text-xs text-gray-500 font-medium">{{ ts.time }} ({{ ts.label }})</span>
-                    <h3 class="font-bold text-gray-800 text-base flex items-center space-x-1.5 mt-0.5">
-                      <span>{{ fac.icon }}</span><span>{{ fac.name }}</span>
-                    </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div v-for="timeSlot in timeSlots" :key="timeSlot.id"
+                  class="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm flex flex-col justify-between space-y-3 transition hover:shadow">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-gray-500">{{ timeSlot.label }}</span>
+                    <span v-if="isReserved(selectedFacility, timeSlot.id)" class="bg-rose-100 text-rose-700 text-xs px-2.5 py-0.5 rounded-full font-medium flex items-center space-x-1">
+                      <i class="fa-solid fa-lock text-[10px]"></i><span>이미 채워짐</span>
+                    </span>
+                    <span v-else class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-medium">예약 가능</span>
                   </div>
-                  <span v-if="isReserved(fac.id, ts.id)" class="bg-rose-100 text-rose-700 text-xs px-2.5 py-1 rounded-full font-bold flex items-center space-x-1">
-                    <i class="fa-solid fa-lock text-[10px]"></i><span>사용 중</span>
-                  </span>
-                  <span v-else class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-bold">비어있음</span>
-                </div>
-
-                <div class="py-1">
-                  <div v-if="isReserved(fac.id, ts.id)" class="space-y-2">
-                    <div class="text-sm font-semibold text-gray-800">
-                      대표자: <span class="text-emerald-900 font-bold">{{ getReservation(fac.id, ts.id).leaderName }}</span>
-                      <span class="text-gray-500 font-normal">({{ getReservationTotalCount(fac.id, ts.id) }}명)</span>
-                    </div>
-                    <div class="text-xs text-gray-600 bg-gray-50 p-2.5 rounded-xl border border-gray-200/80 font-mono">
-                      <span>등록 학번: </span>
-                      <span class="font-bold text-gray-800">{{ getReservationAllStudentIds(fac.id, ts.id).join(', ') }}</span>
-                    </div>
+                  <div class="text-lg font-bold text-gray-900 tracking-tight">{{ timeSlot.time }}</div>
+                  <div class="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <template v-if="isReserved(selectedFacility, timeSlot.id)">
+                      <div class="text-rose-600 font-medium flex items-center space-x-1">
+                        <i class="fa-solid fa-user"></i>
+                        <span>{{ getReservation(selectedFacility, timeSlot.id).leaderName }} 팀 ({{ getReservationTotalCount(selectedFacility, timeSlot.id) }}명)</span>
+                      </div>
+                      <span class="text-gray-400 font-medium">마감</span>
+                    </template>
+                    <template v-else>
+                      <span class="text-gray-500">바로 신청 가능</span>
+                      <button @click="openModal(selectedFacility, timeSlot.id)" class="text-emerald-700 hover:text-emerald-900 font-bold flex items-center space-x-1">
+                        <span>신청</span><i class="fa-solid fa-chevron-right text-[10px]"></i>
+                      </button>
+                    </template>
                   </div>
-                  <div v-else class="text-xs text-gray-400 py-3">현재 예약된 내역이 없습니다. 지금 즉시 예약할 수 있습니다.</div>
-                </div>
-
-                <div class="pt-2 flex items-center justify-end space-x-2">
-                  <template v-if="isReserved(fac.id, ts.id)">
-                    <button @click="showStudentListModal(getReservation(fac.id, ts.id))" class="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl font-medium hover:bg-emerald-100 transition flex items-center space-x-1">
-                      <i class="fa-solid fa-users text-[11px]"></i><span>학번 목록</span>
-                    </button>
-                    <button @click="openPinAuthModal(getReservation(fac.id, ts.id).id, 'change')" class="text-xs bg-gray-800 text-white px-3 py-1.5 rounded-xl font-medium hover:bg-black transition flex items-center space-x-1">
-                      <i class="fa-solid fa-rotate-left text-[11px]"></i><span>코트 변경 / 취소</span>
-                    </button>
-                  </template>
-                  <template v-else>
-                    <button @click="openModal(fac.id, ts.id)" class="w-full text-xs bg-brand-header text-white font-medium py-2 rounded-xl hover:bg-brand-dark transition text-center">즉시 예약하기</button>
-                  </template>
                 </div>
               </div>
-            </template>
-          </div>
-        </div>
-
-        <!-- TAB 3: 타임테이블 -->
-        <div v-if="activeTab === 'timetable'" class="space-y-4">
-          <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h2 class="text-lg font-bold text-gray-800 flex items-center space-x-2">
-                <i class="fa-solid fa-table-cells text-emerald-800"></i><span>전체 예약 현황 타임테이블</span>
-              </h2>
-              <p class="text-xs text-gray-500 mt-0.5">조회 날짜: {{ currentDateStr }} (매일 자정에 새로 시작)</p>
-            </div>
-            <div class="flex items-center space-x-3 text-xs">
-              <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-emerald-200 border border-emerald-400"></span><span class="text-gray-600">예약 가능</span></div>
-              <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-rose-200 border border-rose-400"></span><span class="text-gray-600">이미 채워짐</span></div>
-            </div>
+            </section>
           </div>
 
-          <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-x-auto">
-            <table class="w-full text-left border-collapse min-w-[700px]">
-              <thead>
-                <tr class="bg-emerald-900/5 text-emerald-950 text-xs font-bold border-b border-gray-200">
-                  <th class="p-4 w-44">시간대</th>
-                  <th v-for="fac in facilities" :key="fac.id" class="p-4 text-center"><span class="text-base mr-1">{{ fac.icon }}</span> {{ fac.name }}</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-100 text-xs">
-                <tr v-for="ts in timeSlots" :key="ts.id" class="hover:bg-gray-50/50">
-                  <td class="p-4 font-bold text-gray-800 border-r border-gray-100 bg-gray-50/30">
-                    <div class="text-sm">{{ ts.time }}</div>
-                    <div class="text-[11px] text-gray-500 font-normal">{{ ts.label }}</div>
-                  </td>
-                  <td v-for="fac in facilities" :key="fac.id" class="p-2.5 text-center align-middle">
-                    <div v-if="isReserved(fac.id, ts.id)" class="bg-rose-50 border border-rose-200 rounded-xl p-2.5 space-y-1 text-center">
-                      <div class="inline-flex items-center space-x-1 text-rose-700 font-bold text-[11px]"><i class="fa-solid fa-lock text-[9px]"></i><span>마감 (채워짐)</span></div>
-                      <div class="font-bold text-gray-800">{{ getReservation(fac.id, ts.id).leaderName }} ({{ getReservationTotalCount(fac.id, ts.id) }}명)</div>
-                      <div class="pt-1 flex items-center justify-center space-x-1">
-                        <button @click="showStudentListModal(getReservation(fac.id, ts.id))" class="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 px-2 py-0.5 rounded text-[10px] font-medium transition flex items-center space-x-0.5">
-                          <i class="fa-solid fa-users text-[9px]"></i><span>학번</span>
-                        </button>
-                        <button @click="openPinAuthModal(getReservation(fac.id, ts.id).id, 'cancel')" class="bg-rose-600 hover:bg-rose-700 text-white px-2 py-0.5 rounded text-[10px] font-medium transition">취소</button>
+          <!-- TAB 2: LIVE -->
+          <div v-if="activeTab === 'live'" class="space-y-4">
+            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 class="text-lg font-bold text-gray-800 flex items-center space-x-2">
+                  <span class="text-yellow-500"><i class="fa-solid fa-bolt"></i></span><span>현재 사용 현황 (LIVE)</span>
+                </h2>
+                <p class="text-xs text-gray-500 mt-0.5">선택한 시간대별 각 코트 이용자 및 빈 코트 실시간 확인</p>
+              </div>
+              <div class="flex items-center space-x-2 text-xs">
+                <label class="text-gray-600 font-medium whitespace-nowrap">시간대 필터:</label>
+                <select v-model="liveTimeFilter" class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs text-gray-700 bg-white font-medium">
+                  <option value="ALL">전체 시간대 보기</option>
+                  <option v-for="ts in timeSlots" :key="ts.id" :value="ts.id">{{ ts.time }} ({{ ts.label }})</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <template v-for="ts in filteredTimeSlots" :key="ts.id">
+                <div v-for="fac in facilities" :key="ts.id + fac.id" class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-3 flex flex-col justify-between">
+                  <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div>
+                      <span class="text-xs text-gray-500 font-medium">{{ ts.time }} ({{ ts.label }})</span>
+                      <h3 class="font-bold text-gray-800 text-base flex items-center space-x-1.5 mt-0.5">
+                        <span>{{ fac.icon }}</span><span>{{ fac.name }}</span>
+                      </h3>
+                    </div>
+                    <span v-if="isReserved(fac.id, ts.id)" class="bg-rose-100 text-rose-700 text-xs px-2.5 py-1 rounded-full font-bold flex items-center space-x-1">
+                      <i class="fa-solid fa-lock text-[10px]"></i><span>사용 중</span>
+                    </span>
+                    <span v-else class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-bold">비어있음</span>
+                  </div>
+
+                  <div class="py-1">
+                    <div v-if="isReserved(fac.id, ts.id)" class="space-y-2">
+                      <div class="text-sm font-semibold text-gray-800">
+                        대표자: <span class="text-emerald-900 font-bold">{{ getReservation(fac.id, ts.id).leaderName }}</span>
+                        <span class="text-gray-500 font-normal">({{ getReservationTotalCount(fac.id, ts.id) }}명)</span>
+                        <span v-if="isMine(getReservation(fac.id, ts.id))" class="ml-1 text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded-full align-middle">내 예약</span>
+                      </div>
+                      <div class="text-xs text-gray-600 bg-gray-50 p-2.5 rounded-xl border border-gray-200/80 font-mono">
+                        <span>등록 학번: </span>
+                        <span class="font-bold text-gray-800">{{ getReservationAllStudentIds(fac.id, ts.id).join(', ') }}</span>
                       </div>
                     </div>
-                    <div v-else @click="openModal(fac.id, ts.id)" class="bg-emerald-50/50 border border-emerald-200/60 hover:border-emerald-400 rounded-xl p-3 text-center transition cursor-pointer group">
-                      <div class="text-emerald-700 font-bold text-[11px]">예약 가능</div>
-                      <div class="text-gray-400 group-hover:text-emerald-800 text-[10px] transition mt-0.5">신청</div>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    <div v-else class="text-xs text-gray-400 py-3">현재 예약된 내역이 없습니다. 지금 즉시 예약할 수 있습니다.</div>
+                  </div>
+
+                  <div class="pt-2 flex items-center justify-end space-x-2">
+                    <template v-if="isReserved(fac.id, ts.id)">
+                      <button @click="showStudentListModal(getReservation(fac.id, ts.id))" class="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl font-medium hover:bg-emerald-100 transition flex items-center space-x-1">
+                        <i class="fa-solid fa-users text-[11px]"></i><span>학번 목록</span>
+                      </button>
+                      <button v-if="isMine(getReservation(fac.id, ts.id))" @click="openCancelModal(getReservation(fac.id, ts.id), 'change')" class="text-xs bg-gray-800 text-white px-3 py-1.5 rounded-xl font-medium hover:bg-black transition flex items-center space-x-1">
+                        <i class="fa-solid fa-rotate-left text-[11px]"></i><span>코트 변경 / 취소</span>
+                      </button>
+                    </template>
+                    <template v-else>
+                      <button @click="openModal(fac.id, ts.id)" class="w-full text-xs bg-brand-header text-white font-medium py-2 rounded-xl hover:bg-brand-dark transition text-center">즉시 예약하기</button>
+                    </template>
+                  </div>
+                </div>
+              </template>
+            </div>
           </div>
-        </div>
+
+          <!-- TAB 3: 타임테이블 -->
+          <div v-if="activeTab === 'timetable'" class="space-y-4">
+            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 class="text-lg font-bold text-gray-800 flex items-center space-x-2">
+                  <i class="fa-solid fa-table-cells text-emerald-800"></i><span>전체 예약 현황 타임테이블</span>
+                </h2>
+                <p class="text-xs text-gray-500 mt-0.5">조회 날짜: {{ currentDateStr }} (매일 자정에 새로 시작)</p>
+              </div>
+              <div class="flex items-center space-x-3 text-xs">
+                <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-emerald-200 border border-emerald-400"></span><span class="text-gray-600">예약 가능</span></div>
+                <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-rose-200 border border-rose-400"></span><span class="text-gray-600">이미 채워짐</span></div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-x-auto">
+              <table class="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr class="bg-emerald-900/5 text-emerald-950 text-xs font-bold border-b border-gray-200">
+                    <th class="p-4 w-44">시간대</th>
+                    <th v-for="fac in facilities" :key="fac.id" class="p-4 text-center"><span class="text-base mr-1">{{ fac.icon }}</span> {{ fac.name }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-xs">
+                  <tr v-for="ts in timeSlots" :key="ts.id" class="hover:bg-gray-50/50">
+                    <td class="p-4 font-bold text-gray-800 border-r border-gray-100 bg-gray-50/30">
+                      <div class="text-sm">{{ ts.time }}</div>
+                      <div class="text-[11px] text-gray-500 font-normal">{{ ts.label }}</div>
+                    </td>
+                    <td v-for="fac in facilities" :key="fac.id" class="p-2.5 text-center align-middle">
+                      <div v-if="isReserved(fac.id, ts.id)" :class="isMine(getReservation(fac.id, ts.id)) ? 'bg-emerald-50 border-emerald-300' : 'bg-rose-50 border-rose-200'" class="border rounded-xl p-2.5 space-y-1 text-center">
+                        <div v-if="isMine(getReservation(fac.id, ts.id))" class="inline-flex items-center space-x-1 text-emerald-700 font-bold text-[11px]"><i class="fa-solid fa-circle-check text-[9px]"></i><span>내 예약</span></div>
+                        <div v-else class="inline-flex items-center space-x-1 text-rose-700 font-bold text-[11px]"><i class="fa-solid fa-lock text-[9px]"></i><span>마감 (채워짐)</span></div>
+                        <div class="font-bold text-gray-800">{{ getReservation(fac.id, ts.id).leaderName }} ({{ getReservationTotalCount(fac.id, ts.id) }}명)</div>
+                        <div class="pt-1 flex items-center justify-center space-x-1">
+                          <button @click="showStudentListModal(getReservation(fac.id, ts.id))" class="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 px-2 py-0.5 rounded text-[10px] font-medium transition flex items-center space-x-0.5">
+                            <i class="fa-solid fa-users text-[9px]"></i><span>학번</span>
+                          </button>
+                          <button v-if="isMine(getReservation(fac.id, ts.id))" @click="openCancelModal(getReservation(fac.id, ts.id), 'cancel')" class="bg-rose-600 hover:bg-rose-700 text-white px-2 py-0.5 rounded text-[10px] font-medium transition">취소</button>
+                        </div>
+                      </div>
+                      <div v-else @click="openModal(fac.id, ts.id)" class="bg-emerald-50/50 border border-emerald-200/60 hover:border-emerald-400 rounded-xl p-3 text-center transition cursor-pointer group">
+                        <div class="text-emerald-700 font-bold text-[11px]">예약 가능</div>
+                        <div class="text-gray-400 group-hover:text-emerald-800 text-[10px] transition mt-0.5">신청</div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </template>
       </main>
 
       <footer class="bg-white border-t border-gray-200 py-4 text-center text-xs text-gray-500">
@@ -307,7 +366,7 @@
 
       <!-- MODAL 1: 예약 신청 -->
       <div v-if="modal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-xl border border-gray-100 space-y-5">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-xl border border-gray-100 space-y-5 max-h-[92vh] overflow-y-auto">
           <div class="flex items-center justify-between border-b border-gray-100 pb-3">
             <div>
               <span class="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">신규 예약 신청</span>
@@ -318,39 +377,36 @@
 
           <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-xs text-amber-900 flex items-start space-x-2">
             <i class="fa-solid fa-triangle-exclamation text-amber-600 text-sm mt-0.5"></i>
-            <div>
-              <p class="font-bold">1일 1회 학번 제한 규칙 적용 중</p>
-              <p class="text-amber-800 text-[11px] mt-0.5">대표자 및 동반 참가자 학번은 오늘 다른 예약에 등록되어 있으면 중복 예약이 금지됩니다.</p>
+            <div class="space-y-0.5">
+              <p class="font-bold">예약 규칙</p>
+              <p class="text-amber-800 text-[11px]">· 대표자 포함 <strong>최소 {{ MIN_PEOPLE }}명</strong>부터 예약할 수 있어요.</p>
+              <p class="text-amber-800 text-[11px]">· 대표자는 <strong>하루 1번</strong>만 예약할 수 있어요.</p>
+              <p class="text-amber-800 text-[11px]">· 동반자 학번을 허위로 적으면 이용이 제한될 수 있어요.</p>
             </div>
           </div>
 
           <form @submit.prevent="submitReservation" class="space-y-4">
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">대표자 이름 *</label>
-                <input type="text" v-model="modal.form.leaderName" required placeholder="예: 김민수" class="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">대표자 학번 *</label>
-                <input type="text" inputmode="numeric" v-model="modal.form.leaderId" required placeholder="예: 10219" class="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <div>
+              <label class="block text-xs font-bold text-gray-700 mb-1">대표자 (학교 계정에서 자동 입력)</label>
+              <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm">
+                <span class="font-bold text-gray-800">{{ profile.name }}</span>
+                <span class="font-mono text-emerald-800 font-bold">{{ profile.studentId }}</span>
               </div>
             </div>
 
             <div class="space-y-2 pt-2 border-t border-gray-100">
               <div class="flex items-center justify-between">
-                <label class="text-xs font-bold text-gray-700">동반 참가인원 학번 목록 (선택)</label>
+                <label class="text-xs font-bold text-gray-700">동반 참가자 학번 * <span class="font-normal text-gray-500">(최소 {{ MIN_PEOPLE - 1 }}명)</span></label>
                 <button type="button" @click="addMemberInput" class="text-xs bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold px-2.5 py-1 rounded-lg transition flex items-center space-x-1">
                   <i class="fa-solid fa-plus text-[10px]"></i><span>동반자 추가</span>
                 </button>
               </div>
-              <div v-if="modal.form.members.length === 0" class="text-xs text-gray-400 italic py-2 text-center bg-gray-50 rounded-xl">
-                동반 인원이 있는 경우 '+ 동반자 추가' 버튼을 눌러 학번을 입력하세요.
-              </div>
-              <div v-else class="space-y-2 max-h-40 overflow-y-auto pr-1">
+              <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
                 <div v-for="(memberId, idx) in modal.form.members" :key="idx" class="flex items-center space-x-2">
                   <span class="text-xs text-gray-400 w-12 font-mono">인원 {{ idx + 1 }}</span>
-                  <input type="text" inputmode="numeric" v-model="modal.form.members[idx]" required placeholder="참가자 학번 입력 (예: 10306)" class="flex-1 border border-gray-300 rounded-xl p-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                  <button type="button" @click="removeMemberInput(idx)" class="text-gray-400 hover:text-rose-600 p-1.5 transition"><i class="fa-solid fa-xmark"></i></button>
+                  <input type="text" inputmode="numeric" maxlength="5" v-model="modal.form.members[idx]" required placeholder="학번 5자리 (예: 20915)" class="flex-1 border border-gray-300 rounded-xl p-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                  <button v-if="modal.form.members.length > MIN_PEOPLE - 1" type="button" @click="removeMemberInput(idx)" class="text-gray-400 hover:text-rose-600 p-1.5 transition"><i class="fa-solid fa-xmark"></i></button>
+                  <span v-else class="w-7"></span>
                 </div>
               </div>
             </div>
@@ -358,21 +414,6 @@
             <div class="bg-gray-50 p-3 rounded-xl flex items-center justify-between text-xs text-gray-700">
               <span>총 신청 인원:</span>
               <span class="font-bold text-emerald-800 text-sm">{{ 1 + modal.form.members.length }}명 (대표자 1명 + 동반 {{ modal.form.members.length }}명)</span>
-            </div>
-
-            <!-- 예약 비밀번호 직접 설정 -->
-            <div class="space-y-2 pt-2 border-t border-gray-100">
-              <label class="block text-xs font-bold text-gray-700">
-                <i class="fa-solid fa-lock text-emerald-700 mr-1"></i>예약 비밀번호 설정 (숫자 4자리) *
-              </label>
-              <p class="text-[11px] text-gray-500">예약을 취소하거나 코트를 바꿀 때 이 비밀번호가 필요해요. 꼭 기억하세요!</p>
-              <div class="grid grid-cols-2 gap-3">
-                <input type="password" inputmode="numeric" maxlength="4" v-model="modal.form.pin" required placeholder="비밀번호 4자리"
-                  class="w-full border border-gray-300 rounded-xl p-2.5 text-center text-lg font-bold tracking-widest font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                <input type="password" inputmode="numeric" maxlength="4" v-model="modal.form.pinConfirm" required placeholder="한 번 더 입력"
-                  class="w-full border border-gray-300 rounded-xl p-2.5 text-center text-lg font-bold tracking-widest font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-              </div>
-              <p v-if="modal.form.pinConfirm.length === 4 && modal.form.pin !== modal.form.pinConfirm" class="text-[11px] text-rose-600 font-medium">두 비밀번호가 서로 달라요.</p>
             </div>
 
             <div class="flex items-center space-x-2 pt-3">
@@ -417,56 +458,52 @@
 
       <!-- MODAL 3: 알림 -->
       <div v-if="alertModal.show" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-rose-100 space-y-4">
-          <div class="flex items-center space-x-3 text-rose-600">
-            <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-xl shrink-0">🚨</div>
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border space-y-4" :class="alertModal.ok ? 'border-emerald-100' : 'border-rose-100'">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0" :class="alertModal.ok ? 'bg-emerald-100' : 'bg-rose-100'">{{ alertModal.ok ? '✅' : '🚨' }}</div>
             <h3 class="text-base font-bold text-gray-900">알림</h3>
           </div>
-          <p class="text-xs md:text-sm text-gray-700 leading-relaxed font-medium bg-rose-50/70 p-3.5 rounded-2xl border border-rose-100">{{ alertModal.message }}</p>
-          <button @click="alertModal.show = false" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-sm">확인</button>
+          <p class="text-xs md:text-sm text-gray-700 leading-relaxed font-medium p-3.5 rounded-2xl border" :class="alertModal.ok ? 'bg-emerald-50/70 border-emerald-100' : 'bg-rose-50/70 border-rose-100'">{{ alertModal.message }}</p>
+          <button @click="alertModal.show = false" :class="alertModal.ok ? 'bg-brand-header hover:bg-brand-dark' : 'bg-rose-600 hover:bg-rose-700'" class="w-full text-white font-bold py-2.5 rounded-xl transition text-xs shadow-sm">확인</button>
         </div>
       </div>
 
-      <!-- MODAL 4: 예약 완료 & PIN -->
+      <!-- MODAL 4: 예약 완료 -->
       <div v-if="successModal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-emerald-100 space-y-5 text-center">
           <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto shadow-inner">🎉</div>
           <div>
             <span class="text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full">예약 완료</span>
             <h3 class="text-xl font-bold text-gray-900 mt-2">예약이 성공적으로 등록되었습니다!</h3>
-            <p class="text-xs text-gray-500 mt-1">{{ successModal.facilityName }} ({{ successModal.timeSlotTime }})</p>
+            <p class="text-sm text-gray-700 mt-2 font-medium">{{ successModal.facilityName }}</p>
+            <p class="text-xs text-gray-500">{{ successModal.timeSlotTime }} · {{ successModal.count }}명</p>
           </div>
-          <div class="bg-gradient-to-br from-emerald-900 to-teal-950 p-5 rounded-2xl text-white shadow-md space-y-2">
-            <p class="text-xs font-bold text-yellow-300">설정하신 예약 비밀번호입니다. 취소·변경할 때 필요해요!</p>
-            <div class="text-4xl font-extrabold tracking-widest text-white font-mono py-1">{{ successModal.pin }}</div>
-            <p class="text-[11px] text-emerald-300">대표자: {{ successModal.leaderName }} (학번: {{ successModal.leaderId }})</p>
-          </div>
+          <p class="text-[11px] text-gray-500 bg-gray-50 rounded-xl p-3">취소하거나 코트를 바꾸려면 같은 학교 계정으로 로그인해서 <strong>"코트 변경 / 취소"</strong>를 누르면 돼요.</p>
           <button @click="successModal.show = false" class="w-full bg-brand-header hover:bg-brand-dark text-white font-bold py-3 rounded-xl transition text-sm shadow-md">확인했습니다</button>
         </div>
       </div>
 
-      <!-- MODAL 5: PIN 인증 -->
-      <div v-if="pinAuthModal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <!-- MODAL 5: 취소 확인 -->
+      <div v-if="cancelModal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-4">
           <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-            <div class="flex items-center space-x-2">
-              <span class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm">🔒</span>
-              <h3 class="text-base font-bold text-gray-900">{{ pinAuthModal.actionType === 'change' ? '코트 변경 / 취소 인증' : '예약 취소 인증' }}</h3>
-            </div>
-            <button @click="closePinAuthModal" class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="text-base font-bold text-gray-900">{{ cancelModal.actionType === 'change' ? '코트 변경 / 취소' : '예약 취소' }}</h3>
+            <button @click="cancelModal.show = false" class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
           </div>
-          <p class="text-xs text-gray-600">예약할 때 직접 설정한 <strong class="text-gray-900">4자리 비밀번호</strong>를 입력해 주세요.</p>
-          <form @submit.prevent="verifyPinAndExecute" class="space-y-4">
-            <input type="password" inputmode="numeric" maxlength="4" v-model="pinAuthModal.inputPin" placeholder="4자리 숫자 입력" required
-              class="w-full border border-gray-300 rounded-xl p-3 text-center text-2xl font-bold tracking-widest font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-            <div v-if="pinAuthModal.errorMsg" class="bg-rose-50 text-rose-700 border border-rose-200 p-2.5 rounded-xl text-xs font-medium text-center">{{ pinAuthModal.errorMsg }}</div>
-            <div class="flex space-x-2 pt-2">
-              <button type="button" @click="closePinAuthModal" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-xl text-xs transition">취소</button>
-              <button type="submit" :disabled="busy" class="flex-1 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm">
-                <i v-if="busy" class="fa-solid fa-spinner fa-spin mr-1"></i>확인 및 진행
-              </button>
-            </div>
-          </form>
+          <div v-if="cancelModal.data" class="bg-gray-50 rounded-xl p-3 text-xs text-gray-700 space-y-1">
+            <p><strong>시설:</strong> {{ getFacilityName(cancelModal.data.facilityId) }}</p>
+            <p><strong>시간대:</strong> {{ getTimeSlotTime(cancelModal.data.timeSlotId) }}</p>
+          </div>
+          <p class="text-xs text-gray-600">
+            이 예약을 취소할까요?
+            <span v-if="cancelModal.actionType === 'change'">취소한 뒤 원하는 코트·시간대로 다시 예약하면 돼요.</span>
+          </p>
+          <div class="flex space-x-2 pt-2">
+            <button type="button" @click="cancelModal.show = false" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-xl text-xs transition">돌아가기</button>
+            <button @click="executeCancel" :disabled="busy" class="flex-1 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm">
+              <i v-if="busy" class="fa-solid fa-spinner fa-spin mr-1"></i>예약 취소하기
+            </button>
+          </div>
         </div>
       </div>
 
@@ -475,8 +512,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, onSnapshot, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, collection, onSnapshot, runTransaction, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // ▼ 내 Firebase 프로젝트 설정
     const firebaseConfig = {
@@ -488,16 +525,36 @@
       appId: "1:907205115685:web:3b9dfed9147073649ee4cc"
     };
 
+    // ▼ 운영 설정
+    const SCHOOL_DOMAIN = 'ps.hs.kr';   // 이 도메인 계정만 로그인 가능
+    const MIN_PEOPLE = 2;                // 대표자 포함 최소 인원
+    const MAX_PEOPLE = 20;               // 대표자 포함 최대 인원
+
     const firebaseApp = initializeApp(firebaseConfig);
     const auth = getAuth(firebaseApp);
     const db = getFirestore(firebaseApp);
+
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ hd: SCHOOL_DOMAIN, prompt: 'select_account' });
 
     // 한국 시간 기준 오늘 날짜 (예: 2026-10-30). 날짜마다 예약이 따로 저장되어 매일 자동 초기화됨
     function todayKey() {
       return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());
     }
 
-    // 사용자에게 보여줄 오류
+    // 구글 계정 이름 "20915이주환" → { studentId: "20915", name: "이주환" }
+    function parseProfile(displayName) {
+      const m = /^([1-3][0-9]{4})\s*(\S.*)$/.exec((displayName || '').trim());
+      return m ? { studentId: m[1], name: m[2].trim() } : null;
+    }
+
+    const isSchoolEmail = (email) => (email || '').toLowerCase().endsWith('@' + SCHOOL_DOMAIN);
+    const STUDENT_ID_RE = /^[1-3][0-9]{4}$/;
+
+    const ua = navigator.userAgent || '';
+    const IN_APP = /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\/|everytimeApp|DaumApps|SamsungBrowser\/[0-9.]+ .*CrossApp|wv\)/i.test(ua);
+    const IS_KAKAO = /KAKAOTALK/i.test(ua);
+
     class UserError extends Error {}
 
     const { createApp } = Vue;
@@ -505,6 +562,17 @@
     createApp({
       data() {
         return {
+          SCHOOL_DOMAIN, MIN_PEOPLE,
+          inAppBrowser: IN_APP,
+          isKakao: IS_KAKAO,
+          linkCopied: false,
+
+          authState: 'loading',
+          user: null,
+          profile: { studentId: '', name: '' },
+          loginBusy: false,
+          loginError: '',
+
           activeTab: 'reserve',
           selectedFacility: 'basketball',
           liveTimeFilter: 'ALL',
@@ -533,11 +601,11 @@
 
           reservations: [],
 
-          modal: { show: false, facilityId: null, timeSlotId: null, form: { leaderName: '', leaderId: '', members: [], pin: '', pinConfirm: '' } },
+          modal: { show: false, facilityId: null, timeSlotId: null, form: { members: [] } },
           studentModal: { show: false, data: null },
-          alertModal: { show: false, message: '' },
-          successModal: { show: false, pin: '', facilityName: '', timeSlotTime: '', leaderName: '', leaderId: '' },
-          pinAuthModal: { show: false, resId: null, actionType: 'cancel', inputPin: '', errorMsg: '' }
+          alertModal: { show: false, message: '', ok: false },
+          successModal: { show: false, facilityName: '', timeSlotTime: '', count: 0 },
+          cancelModal: { show: false, data: null, actionType: 'cancel' }
         };
       },
 
@@ -554,40 +622,115 @@
         filteredTimeSlots() {
           if (this.liveTimeFilter === 'ALL') return this.timeSlots;
           return this.timeSlots.filter(ts => ts.id === this.liveTimeFilter);
+        },
+        myReservation() {
+          return this.user ? this.reservations.find(r => r.uid === this.user.uid) : null;
         }
       },
 
-      async mounted() {
-        try {
-          await signInAnonymously(auth);
+      mounted() {
+        onAuthStateChanged(auth, async (u) => {
+          if (!u) {
+            this.user = null;
+            this.stopListening();
+            this.authState = 'ready';
+            return;
+          }
+          // 학교 계정 + 계정 이름 형식 확인
+          const p = parseProfile(u.displayName);
+          if (!isSchoolEmail(u.email) || !u.emailVerified) {
+            this.loginError = `@${SCHOOL_DOMAIN} 학교 계정만 이용할 수 있어요. (지금 계정: ${u.email || '알 수 없음'})`;
+            await signOut(auth);
+            return;
+          }
+          if (!p) {
+            this.loginError = `계정 이름에서 학번을 찾을 수 없어요. (계정 이름: "${u.displayName || ''}") 학생 계정으로 로그인해 주세요.`;
+            await signOut(auth);
+            return;
+          }
+          this.loginError = '';
+          this.profile = p;
+          this.user = u;
+          this.authState = 'ready';
           this.listenToday();
-        } catch (e) {
-          console.error(e);
-          this.dbStatus = 'error';
-          this.dbErrorMsg = e.code || e.message;
-        }
+        });
 
         // 페이지를 켜둔 채 자정이 지나면 새 날짜로 전환
         setInterval(() => {
           const k = todayKey();
           if (k !== this.dateKey) {
             this.dateKey = k;
-            this.listenToday();
+            if (this.user) this.listenToday();
           }
         }, 60 * 1000);
       },
 
       methods: {
-        todayDocRef() {
-          return doc(db, 'gym', this.dateKey);
+        // ---------- 로그인 ----------
+        async login() {
+          this.loginError = '';
+          this.loginBusy = true;
+          try {
+            await signInWithPopup(auth, provider);
+          } catch (e) {
+            console.error(e);
+            const code = e.code || '';
+            if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+              // 사용자가 창을 닫음 — 안내 없음
+            } else if (code === 'auth/popup-blocked') {
+              this.loginError = '팝업이 차단됐어요. 브라우저 주소창 옆의 팝업 차단을 해제하고 다시 눌러주세요.';
+            } else if (code === 'auth/unauthorized-domain') {
+              this.loginError = '이 주소가 Firebase에 등록되지 않았어요. 관리자에게 알려주세요. (승인된 도메인 추가 필요)';
+            } else if (code === 'auth/operation-not-allowed') {
+              this.loginError = 'Firebase에서 Google 로그인이 꺼져 있어요. 관리자에게 알려주세요.';
+            } else {
+              this.loginError = '로그인하지 못했어요. 카톡 등 앱 안의 브라우저라면 크롬·사파리로 열어주세요. (' + code + ')';
+            }
+          } finally {
+            this.loginBusy = false;
+          }
+        },
+        async logout() {
+          await signOut(auth);
+          this.profile = { studentId: '', name: '' };
+        },
+        openExternal() {
+          location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
+        },
+        async copyLink() {
+          try {
+            await navigator.clipboard.writeText(location.href);
+          } catch (e) {
+            const t = document.createElement('textarea');
+            t.value = location.href;
+            document.body.appendChild(t);
+            t.select();
+            try { document.execCommand('copy'); } catch (_) {}
+            t.remove();
+          }
+          this.linkCopied = true;
         },
 
-        listenToday() {
+        // ---------- 데이터 ----------
+        slotsCol() {
+          return collection(db, 'days', this.dateKey, 'slots');
+        },
+        slotRef(slotId) {
+          return doc(db, 'days', this.dateKey, 'slots', slotId);
+        },
+        userDayRef() {
+          return doc(db, 'days', this.dateKey, 'users', this.user.uid);
+        },
+        stopListening() {
           if (this.unsubscribe) this.unsubscribe();
+          this.unsubscribe = null;
           this.reservations = [];
-          this.unsubscribe = onSnapshot(this.todayDocRef(), (snap) => {
-            const data = snap.exists() ? snap.data() : null;
-            this.reservations = data && Array.isArray(data.list) ? data.list : [];
+        },
+        listenToday() {
+          this.stopListening();
+          this.dbStatus = 'loading';
+          this.unsubscribe = onSnapshot(this.slotsCol(), (snap) => {
+            this.reservations = snap.docs.map(d => d.data());
             this.dbStatus = 'ok';
           }, (error) => {
             console.error(error);
@@ -610,6 +753,9 @@
         isReserved(facilityId, timeSlotId) {
           return !!this.getReservation(facilityId, timeSlotId);
         },
+        isMine(res) {
+          return !!(res && this.user && res.uid === this.user.uid);
+        },
         getReservationTotalCount(facilityId, timeSlotId) {
           const res = this.getReservation(facilityId, timeSlotId);
           return res ? 1 + (res.members ? res.members.length : 0) : 0;
@@ -620,154 +766,139 @@
           return [res.leaderId, ...(res.members || [])].filter(Boolean);
         },
 
+        // ---------- 모달 ----------
         openModal(facilityId, timeSlotId) {
           if (this.dbStatus !== 'ok') {
             this.alertMessage('예약 서버에 아직 연결되지 않았습니다. 잠시 후 다시 시도해 주세요.');
             return;
           }
+          if (this.myReservation) {
+            this.alertMessage(`오늘은 이미 예약이 있어요 (${this.getFacilityName(this.myReservation.facilityId)} / ${this.getTimeSlotTime(this.myReservation.timeSlotId)}). 대표자는 하루 1번만 예약할 수 있어요. 바꾸려면 위의 "코트 변경 / 취소"를 먼저 눌러주세요.`);
+            return;
+          }
           this.modal.facilityId = facilityId;
           this.modal.timeSlotId = timeSlotId;
-          this.modal.form = { leaderName: '', leaderId: '', members: [], pin: '', pinConfirm: '' };
+          this.modal.form = { members: Array(MIN_PEOPLE - 1).fill('') };
           this.modal.show = true;
         },
         closeModal() { this.modal.show = false; },
-        addMemberInput() { this.modal.form.members.push(''); },
+        addMemberInput() {
+          if (1 + this.modal.form.members.length >= MAX_PEOPLE) {
+            this.alertMessage(`한 팀은 최대 ${MAX_PEOPLE}명까지예요.`);
+            return;
+          }
+          this.modal.form.members.push('');
+        },
         removeMemberInput(index) { this.modal.form.members.splice(index, 1); },
         showStudentListModal(reservation) {
           this.studentModal.data = reservation;
           this.studentModal.show = true;
         },
-        alertMessage(msg) {
-          this.alertModal.message = msg;
-          this.alertModal.show = true;
+        alertMessage(msg, ok = false) {
+          this.alertModal = { show: true, message: msg, ok };
         },
-        openPinAuthModal(resId, actionType = 'cancel') {
-          this.pinAuthModal = { show: true, resId, actionType, inputPin: '', errorMsg: '' };
+        openCancelModal(reservation, actionType = 'cancel') {
+          this.cancelModal = { show: true, data: reservation, actionType };
         },
-        closePinAuthModal() { this.pinAuthModal.show = false; },
 
-        // 예약 취소 — 동시에 여러 명이 눌러도 데이터가 꼬이지 않도록 트랜잭션 사용
-        async verifyPinAndExecute() {
+        // ---------- 예약 취소 (본인 예약만) ----------
+        async executeCancel() {
           if (this.busy) return;
-          const resId = this.pinAuthModal.resId;
-          const inputPin = this.pinAuthModal.inputPin.trim();
-          const action = this.pinAuthModal.actionType;
+          const res = this.cancelModal.data;
+          const action = this.cancelModal.actionType;
+          if (!this.isMine(res)) {
+            this.cancelModal.show = false;
+            this.alertMessage('본인이 대표자인 예약만 취소할 수 있어요.');
+            return;
+          }
           this.busy = true;
           try {
-            await runTransaction(db, async (tx) => {
-              const ref = this.todayDocRef();
-              const snap = await tx.get(ref);
-              const list = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
-              const target = list.find(r => r.id === resId);
-              if (!target) throw new UserError('예약 정보를 찾을 수 없습니다. 이미 취소되었을 수 있어요.');
-              if (target.pin !== inputPin) throw new UserError('비밀번호가 일치하지 않습니다. 다시 확인해 주세요.');
-              tx.set(ref, { list: list.filter(r => r.id !== resId), updatedAt: serverTimestamp() });
-            });
-
-            this.closePinAuthModal();
+            const batch = writeBatch(db);
+            batch.delete(this.slotRef(res.slotId));
+            batch.delete(this.userDayRef());
+            await batch.commit();
+            this.cancelModal.show = false;
             if (action === 'change') {
               this.activeTab = 'reserve';
-              this.alertMessage('기존 코트 예약이 정상적으로 취소되었습니다. 원하시는 새 코트/시간대를 선택하세요.');
+              this.alertMessage('기존 예약이 취소되었습니다. 원하시는 새 코트·시간대를 선택하세요.', true);
             } else {
-              this.alertMessage('예약이 성공적으로 취소되었습니다.');
+              this.alertMessage('예약이 취소되었습니다.', true);
             }
           } catch (e) {
-            if (e instanceof UserError) {
-              this.pinAuthModal.errorMsg = e.message;
-            } else {
-              console.error(e);
-              this.pinAuthModal.errorMsg = '서버 오류로 처리하지 못했습니다. 다시 시도해 주세요.';
-            }
+            console.error(e);
+            this.cancelModal.show = false;
+            this.alertMessage('서버 오류로 취소하지 못했습니다. 다시 시도해 주세요. (' + (e.code || '') + ')');
           } finally {
             this.busy = false;
           }
         },
 
-        // 예약 신청 — 서버에서 최신 상태를 다시 확인한 뒤 저장 (동시 신청 시 중복 방지)
+        // ---------- 예약 신청 ----------
         async submitReservation() {
           if (this.busy) return;
-          const leaderId = this.modal.form.leaderId.trim();
-          const leaderName = this.modal.form.leaderName.trim();
+          const leaderId = this.profile.studentId;
+          const leaderName = this.profile.name;
           const members = this.modal.form.members.map(m => m.trim()).filter(Boolean);
 
-          if (!leaderId || !leaderName) {
-            this.alertMessage('대표자 이름과 학번을 올바르게 입력해주세요.');
+          if (1 + members.length < MIN_PEOPLE) {
+            this.alertMessage(`대표자 포함 최소 ${MIN_PEOPLE}명부터 예약할 수 있어요. 동반자 학번을 입력해 주세요.`);
             return;
           }
-
-          const pin = this.modal.form.pin.trim();
-          if (!/^[0-9]{4}$/.test(pin)) {
-            this.alertMessage('예약 비밀번호는 숫자 4자리로 입력해 주세요.');
+          const bad = members.find(m => !STUDENT_ID_RE.test(m));
+          if (bad) {
+            this.alertMessage(`학번 [${bad}]이(가) 올바르지 않아요. 학번은 5자리 숫자예요. (예: 20915)`);
             return;
           }
-          if (pin !== this.modal.form.pinConfirm.trim()) {
-            this.alertMessage('비밀번호 확인이 일치하지 않습니다. 같은 번호를 두 번 입력해 주세요.');
+          if (members.includes(leaderId)) {
+            this.alertMessage('대표자 본인 학번은 동반자에 넣지 않아도 돼요.');
             return;
           }
-
-          const newBatchIds = [leaderId, ...members];
-          if (new Set(newBatchIds).size !== newBatchIds.length) {
-            this.alertMessage('신청서 내에 중복 입력된 학번이 있습니다. 동일 학번은 1회만 입력해주세요.');
+          if (new Set(members).size !== members.length) {
+            this.alertMessage('같은 학번이 두 번 입력됐어요. 동일 학번은 1회만 입력해 주세요.');
             return;
           }
 
           const facilityId = this.modal.facilityId;
           const timeSlotId = this.modal.timeSlotId;
+          const slotId = `${facilityId}_${timeSlotId}`;
+          const uid = this.user.uid;
           const newReservation = {
-            id: 'res-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
-            facilityId,
-            timeSlotId,
-            leaderName,
-            leaderId,
-            members,
-            pin,
-            createdAt: new Date().toISOString()
+            slotId, facilityId, timeSlotId,
+            uid, leaderId, leaderName, members,
+            createdAt: serverTimestamp()
           };
 
           this.busy = true;
           try {
             await runTransaction(db, async (tx) => {
-              const ref = this.todayDocRef();
-              const snap = await tx.get(ref);
-              const list = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
-
-              const taken = list.find(r => r.facilityId === facilityId && r.timeSlotId === timeSlotId);
-              if (taken) {
-                throw new UserError(`방금 다른 팀(${taken.leaderName})이 먼저 예약했습니다. 다른 코트나 시간대를 선택해 주세요.`);
+              const slotSnap = await tx.get(this.slotRef(slotId));
+              const userSnap = await tx.get(this.userDayRef());
+              if (slotSnap.exists()) {
+                throw new UserError(`방금 다른 팀(${slotSnap.data().leaderName})이 먼저 예약했습니다. 다른 코트나 시간대를 선택해 주세요.`);
               }
-
-              for (const res of list) {
-                const existingIds = [res.leaderId, ...(res.members || [])].map(id => String(id).trim());
-                const dup = newBatchIds.find(id => existingIds.includes(id));
-                if (dup) {
-                  throw new UserError(
-                    `⚠️ 학번 [${dup}]은(는) 이미 오늘 예약 내역(${this.getFacilityName(res.facilityId)} / ${this.getTimeSlotTime(res.timeSlotId)} - 대표자: ${res.leaderName})이 존재합니다. (1일 1회 제한)`
-                  );
-                }
+              if (userSnap.exists()) {
+                throw new UserError('오늘은 이미 예약이 있어요. 대표자는 하루 1번만 예약할 수 있어요.');
               }
-
-              tx.set(ref, { list: [...list, newReservation], updatedAt: serverTimestamp() });
+              tx.set(this.slotRef(slotId), newReservation);
+              tx.set(this.userDayRef(), { slotId, createdAt: serverTimestamp() });
             });
           } catch (e) {
+            this.busy = false;
             if (e instanceof UserError) {
               this.alertMessage(e.message);
             } else {
               console.error(e);
-              this.alertMessage('서버 오류로 예약하지 못했습니다. 다시 시도해 주세요.');
+              this.alertMessage('서버 오류로 예약하지 못했습니다. 다시 시도해 주세요. (' + (e.code || '') + ')');
             }
-            this.busy = false;
             return;
           }
           this.busy = false;
           this.closeModal();
-
           this.successModal = {
             show: true,
-            pin: newReservation.pin,
             facilityName: this.getFacilityName(facilityId),
             timeSlotTime: this.getTimeSlotTime(timeSlotId),
-            leaderName,
-            leaderId
+            count: 1 + members.length
           };
         }
       }
